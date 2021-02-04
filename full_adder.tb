@@ -1,0 +1,64 @@
+*********************************** Hspice test deck **********************************
+.TITLE full_adder Hspice simulation deck
+********************************************************************************************
+* include transistor models for NMOS and PMOS
+.include "/tools/cadence/FreePDK4514/ncsu_basekit/models/hspice/tran_models/models_nom/PMOS_VTL.inc"
+.include "/tools/cadence/FreePDK4514/ncsu_basekit/models/hspice/tran_models/models_nom/NMOS_VTL.inc"
+
+****************************** Declare Global signals **************************************
+.global VDD VDD
++ GND GND
+
+************************************ SPICE Options ***********************************************
+*Various options are available
+.TEMP 25			$The temperature is set to nominal value of 25
+.option ACCURATE	=1	$Selects a time algorithm for circuits to get accurate measurements
+.option MEASDGT		=6	$Formats the decimal digits to numbers in scientific notation
+.option MEASOUT
+.OPTIONS GMINDC		=1e-18 	$Specifies the paralled conductance for each node of MOSFET
+.option probe post 	=2	$Output in ASCII format
+*.option MEASFORM	=3	$This formats the output variables into seperate columns
+.OPTION INGOLD=1		$output values as scientific notation
+*************************************************************************************************
+
+************************************ Global Parameters *******************************************
+.param VDD= 	0.9	$Parameter to set the supply voltage
+.param GND= 	0	$Parameter to set ground voltage
+
+**************************Input Signal Pulse settings***************************************
+.param tr_clk		= 30p	$Parameter to indicate the rise time of the Input Signal
+.param tf_clk		= 30p	$Parameter to indicate the fall time of the Input Signal
+.param period_clk	= 100p	$Parameter to indicate the period of the Input Signal
+**.param pw_clk		= '(period_clk/2)-(tr_clk+tf_clk/2)' $Parameter calculating the pulse width of the Input Signal
+
+***************************** DUT (SUBCKT) Definition/file inclusion *****************************
+.include "/nethome/zding72/ece3150/setup/full_adder.sp"
+
+************************************** DUT Instantiation ****************************************
+Xfull_adder A B CIN COUT VDD GND SUM full_adder
+
+********************************* Connect Voltage sources ****************************************
+Vvdd VDD 0 DC = VDD
+Vgnd GND 0 DC = GND
+VA A 0 PWL (0p 0 370p 0 400p VDD 770p VDD 800p 0)
+VB B 0 PWL (0p 0 170p 0 200p VDD 370p VDD 400p 0 570p 0 600p VDD 770p VDD 800p 0)
+VCIN CIN 0 PWL (0p 0 70p 0 100p VDD 170p VDD 200p 0 270p 0 300p VDD 370p VDD 400p 0 470p 0 500p VDD 570p VDD 600p 0 670p 0 700p VDD 770p VDD 800p 0)
+**************************************** Start Transient Analysis**************************
+.tran 1p 830p Start = 0.0
+**************************************** Measure statements **************************
+.meas tran sum_delay_1 TRIG V(CIN) VAL='VDD/2' RISE=1 TARG V(SUM) VAL='VDD/2' RISE=1
+.meas tran sum_delay_2 TRIG V(CIN) VAL='VDD/2' RISE=2 TARG V(SUM) VAL='VDD/2' FALL=1
+.meas tran sum_delay_3 TRIG V(CIN) VAL='VDD/2' FALL=2 TARG V(SUM) VAL='VDD/2' RISE=2
+.meas tran sum_delay_4 TRIG V(CIN) VAL='VDD/2' RISE=3 TARG V(SUM) VAL='VDD/2' FALL=2
+.meas tran sum_delay_5 TRIG V(CIN) VAL='VDD/2' RISE=4 TARG V(SUM) VAL='VDD/2' RISE=3
+
+*****************************************Probe signals********************************************
+.option captab
+.probe v(*)
+.probe i(*)
+**************************************************************************************************
+.option lis_new=1
+.option probe post
+****************************************************************************************************
+.end
+********************************* END OF SPICE DECK ************************************************
